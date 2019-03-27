@@ -1,7 +1,5 @@
 package main.util.poi;
 
-import net.lingala.zip4j.exception.ZipException;
-
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.Enumeration;
@@ -157,6 +155,16 @@ public class FileZip {
 			}
 		}
 		return flag;
+	}
+
+	/**获取文件后缀名
+	 * @param fileName
+	 * @return
+	 */
+	public static String getFileType(String fileName) {
+		String[] strArray = fileName.split("\\.");
+		int suffixIndex = strArray.length -1;
+		return strArray[suffixIndex];
 	}
 
 }

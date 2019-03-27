@@ -201,7 +201,7 @@ public class BookMark {
 			fileInputImg = new FileInputStream(imgFilePath);
 			if(big.equals(map.get("type"))) {
 				run.addPicture(fileInputImg,Document.PICTURE_TYPE_JPEG,
-						bookmarkValue, Units.toEMU(430),Units.toEMU(((float)430/imgWidth)*imgHeight));
+						bookmarkValue, Units.toEMU(420),Units.toEMU(((float)420/imgWidth)*imgHeight));
 			}
 			else if(small.equals(map.get("type"))) {
 				run.addPicture(fileInputImg,Document.PICTURE_TYPE_JPEG,

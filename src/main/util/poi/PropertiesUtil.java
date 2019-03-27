@@ -114,15 +114,18 @@ public class PropertiesUtil {
 			throw new RuntimeException("The path of Properties File is need");
 		}
 		InputStreamReader inputStream = null;
+		InputStream inStream = null;
 		Properties p = new Properties();
 		try {
-			inputStream = new InputStreamReader(PropertiesUtil.class
-					.getClassLoader().getResourceAsStream(location), ENCODE);
-		} catch (UnsupportedEncodingException e1) {
-			e1.printStackTrace();
+			//inputStream = new InputStreamReader(PropertiesUtil.class
+			//		.getClassLoader().getResourceAsStream(location), ENCODE);
+			inStream = new FileInputStream(new File(location));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
 		}
 		try {
-			p.load(inputStream);
+			//p.load(inputStream);
+			p.load(inStream);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

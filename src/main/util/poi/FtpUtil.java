@@ -1,5 +1,6 @@
 package main.util.poi;
 
+import main.CreateAppReport;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
@@ -21,7 +22,12 @@ public class FtpUtil {
     private static FTPClient CLIENT = null;
     private static String LOCAL_CHARSET = "GBK";
     private static String SERVER_CHARSET = "iso-8859-1";
-    private static final String FTP_HOST = PropertiesUtil.getValue("report.properties","ftpHost");
+    private static String jarWholePath = CreateAppReport.class.getProtectionDomain().getCodeSource().getLocation()
+            .getFile().substring(1).replace("Report.jar","");
+    private static String propertiesPath = jarWholePath + "template" + File.separator + "report.properties";
+    private static final String FTP_HOST = PropertiesUtil.getValue(propertiesPath,"ftpHost");
+    private static final String FTP_USERNAME = PropertiesUtil.getValue(propertiesPath,"ftpUserName");
+    private static final String FTP_PASSWORD = PropertiesUtil.getValue(propertiesPath,"ftpPassWord");
 
     /**
      * 获取FTPClient对象
@@ -36,7 +42,7 @@ public class FtpUtil {
             // 连接FTP服务器
             CLIENT.connect(FTP_HOST, 21);
             // 登陆FTP服务器
-            CLIENT.login("ASUS", "123456o-0");
+            CLIENT.login(FTP_USERNAME, FTP_PASSWORD);
             if (!FTPReply.isPositiveCompletion(CLIENT.getReplyCode())) {
                 System.out.println("未连接到FTP，用户名或密码错误。");
                 CLIENT.disconnect();
