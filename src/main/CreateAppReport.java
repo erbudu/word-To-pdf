@@ -37,7 +37,7 @@ public class CreateAppReport {
      */
     private static String jarWholePath = CreateAppReport.class.getProtectionDomain().getCodeSource().getLocation()
             .getFile().substring(1).replace("Report.jar","");
-    private static String propertiesPath = jarWholePath + "template" + File.separator + "report.properties";
+    private static String propertiesPath = jarWholePath + File.separator + "report.properties";
     private static final String PUSH_UNFINISHED = PropertiesUtil.getValue(propertiesPath,"push_unfinished");
     private static final String PUSH_FINISHED = PropertiesUtil.getValue(propertiesPath,"push_finished");
     private static final String REPORT_UNFINISHED = PropertiesUtil.getValue(propertiesPath,"report_unfinished");
@@ -47,6 +47,7 @@ public class CreateAppReport {
         String sourceDirector = jarWholePath + PropertiesUtil.getValue(propertiesPath, "sourceDirector");
         System.out.println("源文件夹路径"+sourceDirector);
         while (true) {
+            System.out.println("开始查询文件");
             //连接ftp下载源文件到本地
             //downloadFtpFile(PUSH_UNFINISHED,sourceDirector);
 
@@ -116,24 +117,24 @@ public class CreateAppReport {
                             delAllFile(deleteTarget);
 
                             //上传word.zip并删除
-                            File zipFile = new File(sourceDirector + File.separator + pdfName + "（报告）" + ".zip");
-                            InputStream input = new FileInputStream(zipFile);
-                            uploadFile(REPORT_UNFINISHED,pdfName + "（报告）" + ".zip",input);
-                            input.close();
-                            zipFile.delete();
+                            //File zipFile = new File(sourceDirector + File.separator + pdfName + "（报告）" + ".zip");
+                            //InputStream input = new FileInputStream(zipFile);
+                            //uploadFile(REPORT_UNFINISHED,pdfName + "（报告）" + ".zip",input);
+                            //input.close();
+                            //zipFile.delete();
 
                             //上传app.zip文件并删除
-                            File appFile = new File(sourceDirector + File.separator + pdfName + ".zip");
-                            InputStream appInput = new FileInputStream(appFile);
-                            uploadFile(PUSH_FINISHED,pdfName + ".zip",appInput);
-                            appInput.close();
-                            appFile.delete();
+                            //File appFile = new File(sourceDirector + File.separator + pdfName + ".zip");
+                            //InputStream appInput = new FileInputStream(appFile);
+                            //uploadFile(PUSH_FINISHED,pdfName + ".zip",appInput);
+                            //appInput.close();
+                            //appFile.delete();
 
                             //删除服务器上app.zip源文件
-                            Map<String, Object> para = new HashMap<>(16);
-                            para.put("path", PUSH_UNFINISHED);
-                            para.put("name",pdfName+".zip");
-                            deleteFile(para);
+                            //Map<String, Object> para = new HashMap<>(16);
+                            //para.put("path", PUSH_UNFINISHED);
+                            //para.put("name",pdfName+".zip");
+                            //deleteFile(para);
 
 
                             //源压缩文件移动至新文件夹(暂不需要)
