@@ -346,4 +346,30 @@ public class ReportUtil {
         poiWordUtil.setParagraphSpacingInfo(p, true, null, "120", null, null, false, "", STLineSpacingRule.AUTO);
 	}
 
+	/**
+	 * 创建二级标题
+	 * @param p
+	 * @param content
+	 */
+	public void createMutiLevel_1(XWPFParagraph p,String content) {
+		XmlCursor cursor = p.getCTP().newCursor();
+		XWPFParagraph par = p.getDocument().insertNewParagraph(cursor);
+
+		XWPFRun run = par.createRun();
+		run.setText(content);
+		run.setBold(true);
+		run.setFontFamily("黑体");
+		run.setFontSize(16);
+		par.setStyle("测评报告标题 1");
+		par.setNumID(BigInteger.valueOf(24));
+		// 设置等级
+		par.getCTP().getPPr().getNumPr().addNewIlvl().setVal(BigInteger.valueOf(1));
+		par.getCTP().getPPr().addNewRPr().addNewRFonts().setAscii("黑体");
+		CTParaRPr cTParaRPr = par.getCTP().getPPr().getRPr();
+		cTParaRPr.addNewSz().setVal(BigInteger.valueOf(30));
+		cTParaRPr.addNewSzCs().setVal(BigInteger.valueOf(30));
+		cTParaRPr.addNewKern().setVal(BigInteger.valueOf(0));
+
+	}
+
 }

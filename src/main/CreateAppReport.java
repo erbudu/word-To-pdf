@@ -1,9 +1,11 @@
 package main;
 
-
 import main.util.poi.MSWordTool;
 import main.util.poi.PropertiesUtil;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.*;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFHeader;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
@@ -13,6 +15,7 @@ import net.sf.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -37,24 +40,31 @@ public class CreateAppReport {
      */
     private static String jarWholePath = CreateAppReport.class.getProtectionDomain().getCodeSource().getLocation()
             .getFile().substring(1).replace("Report.jar","");
-    private static String propertiesPath = jarWholePath + File.separator + "report.properties";
+    private static String propertiesPath = jarWholePath + File.separator + "template/report.properties";
     private static final String PUSH_UNFINISHED = PropertiesUtil.getValue(propertiesPath,"push_unfinished");
     private static final String PUSH_FINISHED = PropertiesUtil.getValue(propertiesPath,"push_finished");
     private static final String REPORT_UNFINISHED = PropertiesUtil.getValue(propertiesPath,"report_unfinished");
     private static final String ZIP = "zip";
 
+    public static Log log = LogFactory.getLog(CreateAppReport.class);
+
+    static {
+        PropertyConfigurator.configure(jarWholePath + File.separator + "template" + File.separator
+                + "log4j.properties");
+    }
+
     public static void main(String[] args) throws Exception {
         String sourceDirector = jarWholePath + PropertiesUtil.getValue(propertiesPath, "sourceDirector");
-        System.out.println("源文件夹路径"+sourceDirector);
         while (true) {
-            System.out.println("开始查询文件");
-            //连接ftp下载源文件到本地
-            //downloadFtpFile(PUSH_UNFINISHED,sourceDirector);
+
+            log.info("开始查询文件");
+            //连接ftp下载源文件到本地1
+            downloadFtpFile(PUSH_UNFINISHED,sourceDirector);
 
             long old = System.currentTimeMillis();
             projectBegin(sourceDirector);
             long now = System.currentTimeMillis();
-            System.out.println("共耗时：" + ((now - old) / 1000.0) + "秒");
+            log.info("共耗时：" + ((now - old) / 1000.0) + "秒");
 
             Thread.sleep(2000);
         }
@@ -71,9 +81,10 @@ public class CreateAppReport {
         File file = new File(sourceDirector);
         if(file.exists()) {
             File[] fs = file.listFiles();
+            //判断文件存在，且文件大于0KB
             if((fs != null ? fs.length : 0) != 0) {
                 for (File f : fs) {
-                    if (f.isFile()) {
+                    if (f.isFile() && f.length() != 0) {
                         //获取文件类型
                         String type = getFileType(f.getName());
 
@@ -88,7 +99,10 @@ public class CreateAppReport {
                                 jsonObject = JSONObject.fromObject(input);
 
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                log.error("解压包内找不到对应的json文件！");
+                                File deleteTarget = new File(target.replace("/", File.separator));
+                                delAllFile(deleteTarget);
+                                continue;
                             }
 
                             String appName = "";
@@ -100,8 +114,6 @@ public class CreateAppReport {
                                 getAppTestReport(jsonObject,sourceDirector+File.separator+appName+"（报告）"+File.separator);
                                 //生成附件
                                 getImageReport(jsonObject, target,sourceDirector+File.separator+appName+"（报告）"+File.separator);
-                            } else {
-                                System.out.println("json文件为空！");
                             }
 
                             //压缩word文件，并删除原word文件夹
@@ -117,24 +129,24 @@ public class CreateAppReport {
                             delAllFile(deleteTarget);
 
                             //上传word.zip并删除
-                            //File zipFile = new File(sourceDirector + File.separator + pdfName + "（报告）" + ".zip");
-                            //InputStream input = new FileInputStream(zipFile);
-                            //uploadFile(REPORT_UNFINISHED,pdfName + "（报告）" + ".zip",input);
-                            //input.close();
-                            //zipFile.delete();
+                            File zipFile = new File(sourceDirector + File.separator + pdfName + "（报告）" + ".zip");
+                            InputStream input = new FileInputStream(zipFile);
+                            uploadFile(REPORT_UNFINISHED,pdfName + "（报告）" + ".zip",input);
+                            input.close();
+                            zipFile.delete();
 
                             //上传app.zip文件并删除
-                            //File appFile = new File(sourceDirector + File.separator + pdfName + ".zip");
-                            //InputStream appInput = new FileInputStream(appFile);
-                            //uploadFile(PUSH_FINISHED,pdfName + ".zip",appInput);
-                            //appInput.close();
-                            //appFile.delete();
+                            File appFile = new File(sourceDirector + File.separator + pdfName + ".zip");
+                            InputStream appInput = new FileInputStream(appFile);
+                            uploadFile(PUSH_FINISHED,pdfName + ".zip",appInput);
+                            appInput.close();
+                            appFile.delete();
 
                             //删除服务器上app.zip源文件
-                            //Map<String, Object> para = new HashMap<>(16);
-                            //para.put("path", PUSH_UNFINISHED);
-                            //para.put("name",pdfName+".zip");
-                            //deleteFile(para);
+                            Map<String, Object> para = new HashMap<>(16);
+                            para.put("path", PUSH_UNFINISHED);
+                            para.put("name",pdfName+".zip");
+                            deleteFile(para);
 
 
                             //源压缩文件移动至新文件夹(暂不需要)
@@ -206,6 +218,7 @@ public class CreateAppReport {
         map2.put("鉴定时间", startTime+"至"+endTime);
         map2.put("鉴定过程时间", startTime+"至"+endTime);
         map2.put("报告日期", createTime);
+        map2.put("APP程序名2", appName);
         changer.replaceBookMarkText(map2,false,false,14,"仿宋_GB2312");
 
         List<Map<String,String>> summaryMapList = new ArrayList<>();
@@ -250,7 +263,7 @@ public class CreateAppReport {
         //到服务器存档
         reportName = "1".equals(type) ? reportName : identifyName;
         changer.saveAs(outPath+reportName,outPath);
-        System.out.println(appName+"文件生成成功！");
+        log.info(appName+"文件生成成功！");
 
         //转换成PDF文件,删除原word文件
         //DocToPdf.doc2pdf(outPath+reportName,outPath+appName+pdfName);
@@ -269,8 +282,8 @@ public class CreateAppReport {
         String reportPath = jarWholePath + PropertiesUtil.getValue(propertiesPath, "imageTemplate");
 
         //报告保存名称
-        String reportName = "附件一 APP运行内容固定过程.docx";
-        String pdfName = "附件一 APP运行内容固定过程.pdf";
+        String reportName = "附件 APP运行内容固定过程.docx";
+        String pdfName = "附件 APP运行内容固定过程.pdf";
         MSWordTool changer = new MSWordTool();
         XWPFDocument doc = changer.setTemplateReturnDoc(reportPath);
 
@@ -296,14 +309,14 @@ public class CreateAppReport {
                     aHeaderPara.createRun().setText(docNO);
                     aHeaderPara.createRun().addTab();
                     aHeaderPara.createRun().addTab();
-                    aHeaderPara.createRun().setText("附件一");
+                    aHeaderPara.createRun().setText("附件");
                 } else if ((aHeaderPara.getAlignment().toString()).equals("LEFT")) {
-                    aHeaderPara.createRun().setText("附件一");
+                    aHeaderPara.createRun().setText("附件");
                     aHeaderPara.createRun().addTab();
                     aHeaderPara.createRun().addTab();
                     aHeaderPara.createRun().setText(docNO);
                 } else {
-                    aHeaderPara.createRun().setText("附件一");
+                    aHeaderPara.createRun().setText("附件");
                     aHeaderPara.createRun().addTab();
                     aHeaderPara.createRun().addTab();
                     aHeaderPara.createRun().setText(docNO);
@@ -323,7 +336,7 @@ public class CreateAppReport {
 
         //到服务器存档
         changer.saveAs(outPath+reportName,outPath);
-        System.out.println(appName+"文件生成成功！");
+        log.info(appName+"文件生成成功！");
 
         //转换成PDF文件
         //DocToPdf.doc2pdf(outPath+reportName,outPath+appName+pdfName);

@@ -7,11 +7,12 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+import static main.CreateAppReport.log;
+
 /**java压缩成zip
  * @author Se7en
  */
 public class FileZip {
-
 	/**
 	 * @param inputFileName 你要压缩的文件夹(整个完整路径)
 	 * @param zipFileName   压缩后的文件(整个完整路径)
@@ -94,7 +95,7 @@ public class FileZip {
 		}
 		//不加入close，原压缩文件删不掉
 		zip.close();
-		System.out.println("******************解压完毕********************");
+		log.info("***********"+name+"解压完毕*************");
 		return finaPath;
 	}
 
@@ -110,18 +111,18 @@ public class FileZip {
 		boolean flag = false;
 		File sourceFile = new File(sourceFilePath);
 		if(!sourceFile.exists()) {
-			System.out.println(">>>>>> 待压缩的文件目录：" + sourceFilePath + " 不存在. <<<<<<");
+			log.error(">>>>>> 待压缩的文件目录：" + sourceFilePath + " 不存在. <<<<<<");
 			flag = false;
 			return flag;
 		} else {
 			try {
 				File zipFile = new File(zipFilePath + "/" + fileName + ".zip");
 				if(zipFile.exists()) {
-					System.out.println(">>>>>> " + zipFilePath + " 目录下存在名字为：" + fileName + ".zip" + " 打包文件. <<<<<<");
+					log.error(">>> " + zipFilePath + " 目录下存在名字为：" + fileName + ".zip" + " 打包文件. <<<");
 				} else {
 					File[] sourceFiles = sourceFile.listFiles();
 					if(null == sourceFiles || sourceFiles.length < 1) {
-						System.out.println(">>>>>> 待压缩的文件目录：" + sourceFilePath + " 里面不存在文件,无需压缩. <<<<<<");
+						log.info(">>>>>> 待压缩的文件目录：" + sourceFilePath + " 里面不存在文件,无需压缩. <<<<<<");
 						flag = false;
 						return flag;
 					} else {

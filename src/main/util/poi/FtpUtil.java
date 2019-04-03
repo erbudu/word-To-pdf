@@ -10,6 +10,8 @@ import java.io.*;
 import java.net.SocketException;
 import java.util.Map;
 
+import static main.CreateAppReport.log;
+
 /**
  * ftp上传、下载、删除文件
  *
@@ -44,7 +46,7 @@ public class FtpUtil {
             // 登陆FTP服务器
             CLIENT.login(FTP_USERNAME, FTP_PASSWORD);
             if (!FTPReply.isPositiveCompletion(CLIENT.getReplyCode())) {
-                System.out.println("未连接到FTP，用户名或密码错误。");
+                log.error("未连接到FTP，用户名或密码错误。");
                 CLIENT.disconnect();
             } else {
                 int reply;
@@ -76,7 +78,8 @@ public class FtpUtil {
             CLIENT.changeWorkingDirectory(ftpPath);
             //获取ftpPath文件夹下所有文件
             FTPFile[] ftpFiles = CLIENT.listFiles(ftpPath);
-            System.out.println("文件个数:"+ftpFiles.length);
+            log.info("文件个数:"+ftpFiles.length);
+
 
             for (FTPFile file : ftpFiles) {
                 String name = file.getName();
@@ -95,7 +98,7 @@ public class FtpUtil {
             return isAppend;
 
         } catch (FileNotFoundException | SocketException e) {
-            System.out.println("没有找到文件");
+            log.error("没有找到文件");
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
