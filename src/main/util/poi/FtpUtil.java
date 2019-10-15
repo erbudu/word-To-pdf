@@ -78,22 +78,23 @@ public class FtpUtil {
             CLIENT.changeWorkingDirectory(ftpPath);
             //获取ftpPath文件夹下所有文件
             FTPFile[] ftpFiles = CLIENT.listFiles(ftpPath);
-            log.info("文件个数:"+ftpFiles.length);
+            if(ftpFiles.length != 0) {
+                for (FTPFile file : ftpFiles) {
+                    if(file.isFile() && file.getSize() != 0) {
+                        String name = file.getName();
+                        File localFile = new File(localPath + File.separatorChar + name);
 
+                        if(!new File(localPath).exists()){
+                            new File(localPath).mkdirs();
+                        }
 
-            for (FTPFile file : ftpFiles) {
-                String name = file.getName();
-                File localFile = new File(localPath + File.separatorChar + name);
-
-                if(!new File(localPath).exists()){
-                    new File(localPath).mkdirs();
+                        OutputStream os = new FileOutputStream(localFile);
+                        isAppend = CLIENT.retrieveFile(new String(name.getBytes(LOCAL_CHARSET),SERVER_CHARSET), os);
+                        os.close();
+                    }
                 }
-
-                OutputStream os = new FileOutputStream(localFile);
-                isAppend =  CLIENT.retrieveFile(new String(name.getBytes(LOCAL_CHARSET),SERVER_CHARSET), os);
-                os.close();
-
             }
+
             CLIENT.logout();
             return isAppend;
 

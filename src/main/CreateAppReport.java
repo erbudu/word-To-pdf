@@ -13,13 +13,13 @@ import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static main.util.poi.FileUtil.delAllFile;
 import static main.util.poi.FileZip.fileToZip;
 import static main.util.poi.FileZip.unZipFiles;
@@ -55,18 +55,14 @@ public class CreateAppReport {
 
     public static void main(String[] args) throws Exception {
         String sourceDirector = jarWholePath + PropertiesUtil.getValue(propertiesPath, "sourceDirector");
-        while (true) {
 
-            log.info("开始查询文件");
+        while (true) {
             //连接ftp下载源文件到本地1
             downloadFtpFile(PUSH_UNFINISHED,sourceDirector);
 
-            long old = System.currentTimeMillis();
             projectBegin(sourceDirector);
-            long now = System.currentTimeMillis();
-            log.info("共耗时：" + ((now - old) / 1000.0) + "秒");
 
-            Thread.sleep(2000);
+            Thread.sleep(3000);
         }
 
     }
@@ -76,7 +72,7 @@ public class CreateAppReport {
      * @param sourceDirector 源文件夹
      * @throws Exception
      */
-    private static void projectBegin(String sourceDirector) throws Exception {
+    private static void projectBegin(String sourceDirector) {
         //获取本地文件夹下所有文件，解压zip文件
         File file = new File(sourceDirector);
         if(file.exists()) {
@@ -87,12 +83,12 @@ public class CreateAppReport {
                     if (f.isFile() && f.length() != 0) {
                         //获取文件类型
                         String type = getFileType(f.getName());
-
+                        log.error(f.getName());
                         if (ZIP.equals(type)) {
                             //获取解压后文件夹路径
                             String target = unZipFiles(f,sourceDirector);
                             //获取解压后的json文件
-                            JSONObject jsonObject = null;
+                            JSONObject jsonObject ;
                             String path = target+"/detectInfo.json";
                             try {
                                 String input = FileUtils.readFileToString(new File(path), "UTF-8");
@@ -129,18 +125,29 @@ public class CreateAppReport {
                             delAllFile(deleteTarget);
 
                             //上传word.zip并删除
-                            File zipFile = new File(sourceDirector + File.separator + pdfName + "（报告）" + ".zip");
-                            InputStream input = new FileInputStream(zipFile);
-                            uploadFile(REPORT_UNFINISHED,pdfName + "（报告）" + ".zip",input);
-                            input.close();
-                            zipFile.delete();
+                            try {
+                                File zipFile = new File(sourceDirector + File.separator + pdfName + "（报告）" + ".zip");
+                                InputStream input = new FileInputStream(zipFile);
+                                uploadFile(REPORT_UNFINISHED,pdfName + "（报告）" + ".zip",input);
+                                input.close();
+                                zipFile.delete();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                log.error("找不到报告zip文件！");
+                            }
 
-                            //上传app.zip文件并删除
-                            File appFile = new File(sourceDirector + File.separator + pdfName + ".zip");
-                            InputStream appInput = new FileInputStream(appFile);
-                            uploadFile(PUSH_FINISHED,pdfName + ".zip",appInput);
-                            appInput.close();
-                            appFile.delete();
+                            //上传app.zip文件并本地存档.zip文件
+                            try{
+                                File appFile = new File(sourceDirector + File.separator + pdfName + ".zip");
+                                InputStream appInput = new FileInputStream(appFile);
+                                uploadFile(PUSH_FINISHED,pdfName + ".zip",appInput);
+                                appInput.close();
+                                //appFile.delete();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                log.error("找不到源zip文件");
+                            }
+
 
                             //删除服务器上app.zip源文件
                             Map<String, Object> para = new HashMap<>(16);
@@ -149,11 +156,16 @@ public class CreateAppReport {
                             deleteFile(para);
 
 
-                            //源压缩文件移动至新文件夹(暂不需要)
-                            //File director = new File(finaDirector);
-                            //Path source = f.toPath();
-                            //Path end = director.toPath();
-                            //Files.move(source, end.resolve(source.getFileName()), REPLACE_EXISTING);
+                            //源压缩文件移动至新文件夹
+                            try {
+                                String savedDirector = jarWholePath + PropertiesUtil.getValue(propertiesPath, "savedDirector");
+                                File director = new File(savedDirector);
+                                Path source = f.toPath();
+                                Path end = director.toPath();
+                                Files.move(source, end.resolve(source.getFileName()), REPLACE_EXISTING);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
                 }
@@ -165,22 +177,19 @@ public class CreateAppReport {
 
     /**生成主报告
      * @param outPath 生成报告路径
-     * @throws Exception error
      */
-    private static void getAppTestReport(JSONObject jsonObject,String outPath) throws Exception {
+    private static void getAppTestReport(JSONObject jsonObject,String outPath) {
 
         //模板文件路径
         String reportPath = jarWholePath + PropertiesUtil.getValue(propertiesPath, "reportTemplate");
         String identifyPath = jarWholePath + PropertiesUtil.getValue(propertiesPath, "identifyTemplate");
 
-        String lwfSignPath = jarWholePath + PropertiesUtil.getValue(propertiesPath, "lwf");
-        String zjSignPath = jarWholePath + PropertiesUtil.getValue(propertiesPath, "zj");
         String sealSignPath = jarWholePath + PropertiesUtil.getValue(propertiesPath, "company");
         String identifySignPath = jarWholePath + PropertiesUtil.getValue(propertiesPath, "identify");
 
         //报告保存名称
         String reportName = "证据固定报告.docx";
-        String identifyName = "司法鉴定报告.docx";
+        String identifyName = "司法鉴定意见书.docx";
         String pdfName = "证据固定报告.pdf";
 
         //获取当前时间
@@ -204,7 +213,12 @@ public class CreateAppReport {
         String type = jsonObject.get("type")+"";
 
         MSWordTool changer = new MSWordTool();
-        changer.setTemplateReturnDoc("1".equals(type) ? reportPath : identifyPath);
+        try {
+            changer.setTemplateReturnDoc("1".equals(type) ? reportPath : identifyPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.info("模板报告获取失败，请检查模板文件路径");
+        }
 
         Map<String,String> map = new HashMap<>(16);
         map.put("备案编号", docNO);
@@ -239,31 +253,17 @@ public class CreateAppReport {
         map6.put("IP地址", appIP);
         changer.replaceBookMarkText(map6,false,false,12,"仿宋_GB2312");
 
-        //签名插入
+        //根据不同类型选择不同公司印章
         Map<String,String> map4 = new HashMap<>(16);
         Map<String,String> map5 = new HashMap<>(16);
-        map4.put("filepath", lwfSignPath);
-        map4.put("type", "small");
-        map5.put("林伟烽", "");
-        changer.replaceBookMarkPhoto(map5,map4);
-
-        map4.put("filepath", zjSignPath);
-        map4.put("type", "small");
-        map5.remove("林伟烽");
-        map5.put("张剑", "");
-        changer.replaceBookMarkPhoto(map5,map4);
-
-        //根据不同类型选择不同公司印章
         map4.put("filepath", "1".equals(type) ? sealSignPath : identifySignPath);
         map4.put("type", "middle");
-        map5.remove("张剑");
         map5.put("公章", "");
         changer.replaceBookMarkPhoto(map5,map4);
 
         //到服务器存档
         reportName = "1".equals(type) ? reportName : identifyName;
         changer.saveAs(outPath+reportName,outPath);
-        log.info(appName+"文件生成成功！");
 
         //转换成PDF文件,删除原word文件
         //DocToPdf.doc2pdf(outPath+reportName,outPath+appName+pdfName);
@@ -275,9 +275,8 @@ public class CreateAppReport {
      * @param jsonObject json文件
      * @param imagePath 图片路径
      * @param outPath 输出路径
-     * @throws Exception error
      */
-    private static void getImageReport(JSONObject jsonObject,String imagePath, String outPath) throws Exception {
+    private static void getImageReport(JSONObject jsonObject,String imagePath, String outPath) {
         //模板路径
         String reportPath = jarWholePath + PropertiesUtil.getValue(propertiesPath, "imageTemplate");
 
@@ -285,7 +284,13 @@ public class CreateAppReport {
         String reportName = "附件 APP运行内容固定过程.docx";
         String pdfName = "附件 APP运行内容固定过程.pdf";
         MSWordTool changer = new MSWordTool();
-        XWPFDocument doc = changer.setTemplateReturnDoc(reportPath);
+        XWPFDocument doc = null;
+        try {
+            doc = changer.setTemplateReturnDoc(reportPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.info("模板附件获取失败，请检查模板文件路径");
+        }
 
         //获取json数据
         JSONArray imgArray = jsonObject.getJSONArray("imgSet");
@@ -336,7 +341,6 @@ public class CreateAppReport {
 
         //到服务器存档
         changer.saveAs(outPath+reportName,outPath);
-        log.info(appName+"文件生成成功！");
 
         //转换成PDF文件
         //DocToPdf.doc2pdf(outPath+reportName,outPath+appName+pdfName);

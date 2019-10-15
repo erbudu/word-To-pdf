@@ -54,13 +54,20 @@ public class FileZip {
 	/**解压
 	 * @param zipFile
 	 * @param descDir
-	 * @throws IOException
 	 */
-	public static String unZipFiles(File zipFile, String descDir) throws IOException {
+	public static String unZipFiles(File zipFile, String descDir) {
 		//解决中文文件夹乱码
-		ZipFile zip = new ZipFile(zipFile, Charset.forName("GBK"));
-		//获取压缩文件文件名
-		String name = zip.getName().substring(zip.getName().lastIndexOf('\\')+1, zip.getName().lastIndexOf('.'));
+		ZipFile zip = null;
+		String name = "";
+		try {
+			zip = new ZipFile(zipFile, Charset.forName("GBK"));
+			//获取压缩文件文件名
+			name = zip.getName().substring(zip.getName().lastIndexOf('\\')+1, zip.getName().lastIndexOf('.'));
+		} catch (IOException e) {
+			e.printStackTrace();
+			log.error("zip压缩包文件异常，无法解压！");
+		}
+
 		//解压后的文件路径
 		String finaPath = descDir + File.separator + name;
 		File pathFile = new File(finaPath);
@@ -69,9 +76,14 @@ public class FileZip {
 		}
 
 		for (Enumeration<? extends ZipEntry> entries = zip.entries(); entries.hasMoreElements(); ) {
-			ZipEntry entry = (ZipEntry) entries.nextElement();
+			ZipEntry entry = entries.nextElement();
 			String zipEntryName = entry.getName();
-			InputStream in = zip.getInputStream(entry);
+			InputStream in = null;
+			try {
+				in = zip.getInputStream(entry);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			String outPath = (descDir + File.separator + name + "/" + zipEntryName).replaceAll("\\*", "/");
 
 			// 判断路径是否存在,不存在则创建文件路径
@@ -84,18 +96,34 @@ public class FileZip {
 				continue;
 			}
 
-			FileOutputStream out = new FileOutputStream(outPath);
+			FileOutputStream out = null;
+			try {
+				out = new FileOutputStream(outPath);
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+				log.error("找不到解压文件输出路径");
+				continue;
+			}
 			byte[] buf1 = new byte[1024];
 			int len;
-			while ((len = in.read(buf1)) > 0) {
-				out.write(buf1, 0, len);
+			try {
+				while ((len = in.read(buf1)) > 0) {
+					out.write(buf1, 0, len);
+				}
+				in.close();
+				out.close();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			in.close();
-			out.close();
+
 		}
 		//不加入close，原压缩文件删不掉
-		zip.close();
-		log.info("***********"+name+"解压完毕*************");
+		try {
+			zip.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		log.info(name+"已解压");
 		return finaPath;
 	}
 
@@ -111,18 +139,18 @@ public class FileZip {
 		boolean flag = false;
 		File sourceFile = new File(sourceFilePath);
 		if(!sourceFile.exists()) {
-			log.error(">>>>>> 待压缩的文件目录：" + sourceFilePath + " 不存在. <<<<<<");
+			log.error("待压缩的文件目录：" + sourceFilePath + " 不存在");
 			flag = false;
 			return flag;
 		} else {
 			try {
 				File zipFile = new File(zipFilePath + "/" + fileName + ".zip");
 				if(zipFile.exists()) {
-					log.error(">>> " + zipFilePath + " 目录下存在名字为：" + fileName + ".zip" + " 打包文件. <<<");
+					log.error(zipFilePath + " 目录下存在名字为：" + fileName + ".zip" + " 打包文件");
 				} else {
 					File[] sourceFiles = sourceFile.listFiles();
 					if(null == sourceFiles || sourceFiles.length < 1) {
-						log.info(">>>>>> 待压缩的文件目录：" + sourceFilePath + " 里面不存在文件,无需压缩. <<<<<<");
+						log.info("待压缩的文件目录：" + sourceFilePath + " 里面不存在文件,无需压缩");
 						flag = false;
 						return flag;
 					} else {
