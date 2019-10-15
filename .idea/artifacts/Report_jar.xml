@@ -6,23 +6,24 @@
         <element id="file-copy" path="$PROJECT_DIR$/META-INF/MANIFEST.MF" />
       </element>
       <element id="module-output" name="Report" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/poi-3.16.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/morph-1.0.1.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/servlet-api.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/zip4j-1.3.1.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/ezmorph-1.0.6.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/commons-io-2.4.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/poi-ooxml-3.16.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/xmlbeans-2.3.0.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/commons-net-3.6.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/commons-lang-2.6.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/ooxml-schemas-1.1.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/json-lib-2.4-jdk15.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/commons-logging-1.2.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/commons-httpclient-3.1.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/aspose-words-19.2-jdk16.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/commons-beanutils-1.9.2.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/src/resources/lib/commons-collections-3.2.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/poi-3.16.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/morph-1.0.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/servlet-api.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/zip4j-1.3.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/log4j-1.2.17.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/ezmorph-1.0.6.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/commons-io-2.4.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/poi-ooxml-3.16.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/xmlbeans-2.3.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/commons-net-3.6.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/commons-lang-2.6.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/ooxml-schemas-1.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/json-lib-2.4-jdk15.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/commons-logging-1.2.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/commons-httpclient-3.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/aspose-words-19.2-jdk16.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/commons-beanutils-1.9.2.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/src/lib/commons-collections-3.2.1.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>
