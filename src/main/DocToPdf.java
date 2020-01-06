@@ -7,6 +7,7 @@ import main.util.poi.PropertiesUtil;
 
 import java.io.*;
 
+import static main.CreateAppReport.log;
 import static main.util.poi.FileUtil.delFile;
 
 /**
@@ -16,12 +17,15 @@ import static main.util.poi.FileUtil.delFile;
  */
 
 class DocToPdf {
+    private static String jarWholePath = CreateAppReport.class.getProtectionDomain().getCodeSource().getLocation()
+            .getFile().substring(1).replace("Report.jar","");
+    private static String propertiesPath = jarWholePath + File.separator + "template/report.properties";
 
     private static boolean getLicense() {
         boolean result = false;
         try {
             //获取license文件
-            String licensePath = PropertiesUtil.getValue("report.properties", "licensePath");
+            String licensePath = jarWholePath + PropertiesUtil.getValue(propertiesPath, "licensePath");
             InputStream inputStream = new FileInputStream(licensePath);
 
             License aposeLic = new License();
@@ -34,10 +38,15 @@ class DocToPdf {
         return result;
     }
 
-    static void doc2pdf(String inPath,String outPath) throws Exception {
-        if (!getLicense()) {
-            // 验证License 若不验证则转化出的pdf文档会有水印产生
-            throw new Exception("com.aspose.words license ERROR!");
+    static void doc2pdf(String inPath,String outPath) {
+        try {
+            if (!getLicense()) {
+                // 验证License 若不验证则转化出的pdf文档会有水印产生
+                throw new Exception("com.aspose.words license ERROR!");
+            }
+        } catch (Exception e) {
+            log.error("com.aspose.words license ERROR!");
+            e.printStackTrace();
         }
 
         try {
@@ -54,7 +63,7 @@ class DocToPdf {
                 e.printStackTrace();
             }
             //删除源文件
-            delFile(inPath);
+            //delFile(inPath);
         } catch (Exception e) {
             e.printStackTrace();
         }

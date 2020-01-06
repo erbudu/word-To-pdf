@@ -10,8 +10,6 @@ import java.io.*;
 import java.net.SocketException;
 import java.util.Map;
 
-import static main.CreateAppReport.log;
-
 /**
  * ftp上传、下载、删除文件
  *
@@ -46,7 +44,7 @@ public class FtpUtil {
             // 登陆FTP服务器
             CLIENT.login(FTP_USERNAME, FTP_PASSWORD);
             if (!FTPReply.isPositiveCompletion(CLIENT.getReplyCode())) {
-                log.error("未连接到FTP，用户名或密码错误。");
+                System.out.println("未连接到FTP，用户名或密码错误。");
                 CLIENT.disconnect();
             } else {
                 int reply;
@@ -78,28 +76,26 @@ public class FtpUtil {
             CLIENT.changeWorkingDirectory(ftpPath);
             //获取ftpPath文件夹下所有文件
             FTPFile[] ftpFiles = CLIENT.listFiles(ftpPath);
-            if(ftpFiles.length != 0) {
-                for (FTPFile file : ftpFiles) {
-                    if(file.isFile() && file.getSize() != 0) {
-                        String name = file.getName();
-                        File localFile = new File(localPath + File.separatorChar + name);
+            System.out.println("文件个数:"+ftpFiles.length);
 
-                        if(!new File(localPath).exists()){
-                            new File(localPath).mkdirs();
-                        }
+            for (FTPFile file : ftpFiles) {
+                String name = file.getName();
+                File localFile = new File(localPath + File.separatorChar + name);
 
-                        OutputStream os = new FileOutputStream(localFile);
-                        isAppend = CLIENT.retrieveFile(new String(name.getBytes(LOCAL_CHARSET),SERVER_CHARSET), os);
-                        os.close();
-                    }
+                if(!new File(localPath).exists()){
+                    new File(localPath).mkdirs();
                 }
-            }
 
+                OutputStream os = new FileOutputStream(localFile);
+                isAppend =  CLIENT.retrieveFile(new String(name.getBytes(LOCAL_CHARSET),SERVER_CHARSET), os);
+                os.close();
+
+            }
             CLIENT.logout();
             return isAppend;
 
         } catch (FileNotFoundException | SocketException e) {
-            log.error("没有找到文件");
+            System.out.println("没有找到文件");
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();

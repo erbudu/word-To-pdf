@@ -39,7 +39,6 @@ public class MSWordTool {
 
 	private BookMarks bookMarks = null;
 	PoiWordUtil poiWordUtil = new PoiWordUtil();
-	ReportSplice reportSplice = new ReportSplice();
 	/**
 	 * 为文档设置模板
 	 * 
@@ -336,7 +335,7 @@ public class MSWordTool {
 							fileInputImg = new FileInputStream(imgFilePath);
 
 							run.addPicture(fileInputImg,Document.PICTURE_TYPE_JPEG,
-									bookMarkName, Units.toEMU(215),Units.toEMU(((float)215/imgWidth)*imgHeight));
+									bookMarkName, Units.toEMU(210),Units.toEMU(((float)210/imgWidth)*imgHeight));
 							fileInputImg.close();
 						} catch (Exception e) {
 							e.printStackTrace();
@@ -501,27 +500,6 @@ public class MSWordTool {
 			// 进行替换
 			if (indicator.get(bookMarkName) != null) {
 				bookMark.insertPhotoAtBookMark(indicator.get(bookMarkName),map);
-			}
-		}
-	}
-
-	/**
-	 * 在书签出进行文本插入，摘取另一word文档文本，进行粘贴操作
-	 *
-	 * @param indicator
-	 */
-	public void replaceBookMarkSplice(Map<String, String> indicator, String sourcePath) throws Exception {
-		// 循环进行替换
-		Iterator<String> bookMarkIter = bookMarks.getNameIterator();
-		while (bookMarkIter.hasNext()) {
-			String bookMarkName = bookMarkIter.next();
-
-			// 得到标签名称
-			BookMark bookMark = bookMarks.getBookmark(bookMarkName);
-
-			// 进行替换
-			if (indicator.get(bookMarkName) != null) {
-				reportSplice.spliceReport(indicator.get(bookMarkName),sourcePath);
 			}
 		}
 	}

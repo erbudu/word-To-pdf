@@ -21,9 +21,8 @@ import java.util.*;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static main.util.poi.FileUtil.delAllFile;
-import static main.util.poi.FileZip.fileToZip;
-import static main.util.poi.FileZip.unZipFiles;
-import static main.util.poi.FileZip.getFileType;
+import static main.util.poi.FileUtil.delFile;
+import static main.util.poi.FileZip.*;
 import static main.util.poi.FtpUtil.deleteFile;
 import static main.util.poi.FtpUtil.downloadFtpFile;
 import static main.util.poi.FtpUtil.uploadFile;
@@ -55,7 +54,7 @@ public class CreateAppReport {
 
     public static void main(String[] args) throws Exception {
         String sourceDirector = jarWholePath + PropertiesUtil.getValue(propertiesPath, "sourceDirector");
-
+        projectBegin(sourceDirector);
         while (true) {
             //连接ftp下载源文件到本地1
             downloadFtpFile(PUSH_UNFINISHED,sourceDirector);
@@ -64,7 +63,6 @@ public class CreateAppReport {
 
             Thread.sleep(3000);
         }
-
     }
 
 
@@ -89,7 +87,7 @@ public class CreateAppReport {
                             String target = unZipFiles(f,sourceDirector);
                             //获取解压后的json文件
                             JSONObject jsonObject ;
-                            String path = target+"/detectInfo.json";
+                            String path = target + "/detectInfo.json";
                             try {
                                 String input = FileUtils.readFileToString(new File(path), "UTF-8");
                                 jsonObject = JSONObject.fromObject(input);
@@ -102,83 +100,113 @@ public class CreateAppReport {
                             }
 
                             String appName = "";
+                            String outPath = "" ;
                             if(jsonObject != null) {
                                 //获取文件名
                                 appName = jsonObject.getString("appName");
-
+                                outPath = sourceDirector + File.separator + appName + "（报告）" ;
                                 //生成主报告
-                                getAppTestReport(jsonObject,sourceDirector+File.separator+appName+"（报告）"+File.separator);
+                                getAppTestReport(jsonObject, target, outPath + File.separator + "ViolationReport" + File.separator);
                                 //生成附件
-                                getImageReport(jsonObject, target,sourceDirector+File.separator+appName+"（报告）"+File.separator);
+//                                getImageReport(jsonObject, target,sourceDirector+File.separator+appName+"（报告）"+File.separator);
                             }
 
-                            //压缩word文件，并删除原word文件夹
-                            String finalZip = sourceDirector + File.separator + appName + "（报告）";
-                            String pdfName = f.getName().substring(f.getName().lastIndexOf('\\')+1, f.getName().lastIndexOf('.'));
-                            fileToZip(finalZip, sourceDirector, pdfName + "（报告）");
+                            //将源文件中的复制到生成word报告文件夹中，需要一一对应，文件为空的，生成空文件夹
+                            String appIcon = outPath + File.separator + "AppIcon";
+                            String contentViolation = outPath + File.separator + "ContentViolation";
+                            String descImage = outPath + File.separator + "DescImage";
+                            String packApk = outPath + File.separator + "PackApk";
+                            String detectText = outPath + File.separator + "数据传输格式.txt";
 
-                            File deleteFinalZip = new File(sourceDirector+File.separator+appName+"（报告）");
+                            copyFolder(target + "/icon", appIcon);
+                            copyFolder(target + "/detectImg", contentViolation);
+                            copyFolder(target + "/DescImage", descImage);
+                            copyFolder(target + "/apk", packApk);
+                            copyFile(target + "/detectInfo1.txt", detectText);
+
+
+                            // 压缩word报告文件夹，并删除原word报告文件夹
+                            try {
+                                zipCompress(outPath, outPath+".zip");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            File deleteFinalZip = new File(outPath);
                             delAllFile(deleteFinalZip);
 
                             //删除解压后的文件夹
                             File deleteTarget = new File(target.replace("/", File.separator));
                             delAllFile(deleteTarget);
 
-                            //上传word.zip并删除
-                            try {
-                                File zipFile = new File(sourceDirector + File.separator + pdfName + "（报告）" + ".zip");
-                                InputStream input = new FileInputStream(zipFile);
-                                uploadFile(REPORT_UNFINISHED,pdfName + "（报告）" + ".zip",input);
-                                input.close();
-                                zipFile.delete();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                log.error("找不到报告zip文件！");
-                            }
+                            handleReport(sourceDirector, outPath, appName, f);
 
-                            //上传app.zip文件并本地存档.zip文件
-                            try{
-                                File appFile = new File(sourceDirector + File.separator + pdfName + ".zip");
-                                InputStream appInput = new FileInputStream(appFile);
-                                uploadFile(PUSH_FINISHED,pdfName + ".zip",appInput);
-                                appInput.close();
-                                //appFile.delete();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                log.error("找不到源zip文件");
-                            }
-
-
-                            //删除服务器上app.zip源文件
-                            Map<String, Object> para = new HashMap<>(16);
-                            para.put("path", PUSH_UNFINISHED);
-                            para.put("name",pdfName+".zip");
-                            deleteFile(para);
-
-
-                            //源压缩文件移动至新文件夹
-                            try {
-                                String savedDirector = jarWholePath + PropertiesUtil.getValue(propertiesPath, "savedDirector");
-                                File director = new File(savedDirector);
-                                Path source = f.toPath();
-                                Path end = director.toPath();
-                                Files.move(source, end.resolve(source.getFileName()), REPLACE_EXISTING);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
                         }
                     }
                 }
             }
-
         }
-
     }
 
-    /**生成主报告
-     * @param outPath 生成报告路径
+
+    /** 处理生成的报告文件
+     * @param sourceDirector 源文件夹
+     * @param outPath 目标文件夹
+     * @param appName app名字
+     * @param f 文件
      */
-    private static void getAppTestReport(JSONObject jsonObject,String outPath) {
+    private static void handleReport(String sourceDirector, String outPath, String appName, File f) {
+        //上传word.zip并删除源文件
+        try {
+            File zipFile = new File(outPath + ".zip");
+            InputStream input = new FileInputStream(zipFile);
+            uploadFile(REPORT_UNFINISHED,appName + "（报告）.zip",input);
+            input.close();
+            zipFile.delete();
+        } catch (IOException e) {
+            e.printStackTrace();
+            log.error("找不到报告zip文件！");
+        }
+
+
+        //上传app.zip文件
+        try{
+            File appFile = new File(sourceDirector + File.separator + appName + ".zip");
+            InputStream appInput = new FileInputStream(appFile);
+            uploadFile(PUSH_FINISHED,appName + ".zip",appInput);
+            appInput.close();
+//            appFile.delete();
+        } catch (IOException e) {
+            e.printStackTrace();
+            log.error("找不到源zip文件");
+        }
+
+        //删除服务器上app.zip源文件
+        Map<String, Object> para = new HashMap<>(16);
+        para.put("path", PUSH_UNFINISHED);
+        para.put("name",appName+".zip");
+        deleteFile(para);
+
+
+        //源压缩文件移动至新文件夹(本地存档)
+        try {
+            String savedDirector = jarWholePath + PropertiesUtil.getValue(propertiesPath, "savedDirector");
+            File director = new File(savedDirector);
+            Path source = f.toPath();
+            Path end = director.toPath();
+            Files.move(source, end.resolve(source.getFileName()), REPLACE_EXISTING);
+            log.info(appName+"报告压缩包已生成");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    /**生成主报告
+     * @param jsonObject json数据
+     * @param imagePath 图片路径
+     * @param outPath 输出路径
+     */
+    private static void getAppTestReport(JSONObject jsonObject, String imagePath, String outPath) {
 
         //模板文件路径
         String reportPath = jarWholePath + PropertiesUtil.getValue(propertiesPath, "reportTemplate");
@@ -190,7 +218,8 @@ public class CreateAppReport {
         //报告保存名称
         String reportName = "证据固定报告.docx";
         String identifyName = "司法鉴定意见书.docx";
-        String pdfName = "证据固定报告.pdf";
+        String reportPdfName = "证据固定报告.pdf";
+        String identifyPdfName = "司法鉴定意见书.pdf";
 
         //获取当前时间
         SimpleDateFormat date = new SimpleDateFormat("yyyy年MM月dd日");
@@ -257,21 +286,41 @@ public class CreateAppReport {
         Map<String,String> map4 = new HashMap<>(16);
         Map<String,String> map5 = new HashMap<>(16);
         map4.put("filepath", "1".equals(type) ? sealSignPath : identifySignPath);
-        map4.put("type", "middle");
+        map4.put("type", "small");
         map5.put("公章", "");
         changer.replaceBookMarkPhoto(map5,map4);
 
+        //获取图片json数据
+        JSONArray imgArray = jsonObject.getJSONArray("imgSet");
+
+        //附录一软件名
+        Map<String,String> map7 = new HashMap<>(16);
+        map7.put("软件名", "“"+appName+"”");
+        changer.replaceBookMarkText(map7,false,false,10,"仿宋_GB2312");
+
+        //插入图片一
+        Map<String,String> map8 = new HashMap<>(16);
+        Map<String,String> map9 = new HashMap<>(16);
+        map8.put("filepath", imagePath+imgArray.getJSONObject(0).getString("img"));
+        map8.put("type", "middle");
+        map9.put("图片一", "");
+        changer.replaceBookMarkPhoto(map9,map8);
+
+        // 批量插入图片
+        changer.fillPictureTableAtBookMark("图片表格",imagePath,imgArray);
+
         //到服务器存档
         reportName = "1".equals(type) ? reportName : identifyName;
-        changer.saveAs(outPath+reportName,outPath);
+        changer.saveAs(outPath + docNO + appName + reportName, outPath);
 
         //转换成PDF文件,删除原word文件
-        //DocToPdf.doc2pdf(outPath+reportName,outPath+appName+pdfName);
+        String pdfName = "1".equals(type) ? reportPdfName : identifyPdfName;
+        DocToPdf.doc2pdf(outPath + docNO + appName + reportName, outPath + docNO + appName + pdfName);
 
     }
 
 
-    /**
+    /** 输出图片文档
      * @param jsonObject json文件
      * @param imagePath 图片路径
      * @param outPath 输出路径
@@ -347,5 +396,57 @@ public class CreateAppReport {
 
     }
 
+    /**复制文件夹所有文件到新文件夹
+     * @param strOldPath 源文件夹
+     * @param strNewPath 新文件夹
+     */
+    private static void copyFolder(String strOldPath, String strNewPath) {
+        File fOldFolder = new File(strOldPath);
+        try {
+            File fNewFolder = new File(strNewPath);
+            if (!fNewFolder.exists()) {
+                //不存在就创建一个文件夹
+                fNewFolder.mkdirs();
+            }
 
+            //获取旧文件夹里面所有的文件
+            if (fOldFolder.exists()) {
+                File[] arrFiles = fOldFolder.listFiles();
+                for (int i = 0; i < arrFiles.length; i++) {
+                    if (arrFiles[i].isDirectory()) {
+                        copyFolder(strOldPath + File.separator + arrFiles[i].getName(), strNewPath + File.separator + arrFiles[i].getName());
+                    } else {
+                        copyFile(strOldPath + File.separator + arrFiles[i].getName(), strNewPath + File.separator + arrFiles[i].getName());
+                    }
+                }
+            }
+        }
+        catch (Exception e) {
+            log.error("复制文件失败：" + strOldPath);
+        }
+    }
+
+    private static void copyFile(String strOldPath, String strNewPath) {
+        try {
+            File fOldFile = new File(strOldPath);
+            if (fOldFile.exists()) {
+                int byteread = 0;
+                InputStream inputStream = new FileInputStream(fOldFile);
+                FileOutputStream fileOutputStream = new FileOutputStream(strNewPath);
+                byte[] buffer = new byte[1444];
+                while ( (byteread = inputStream.read(buffer)) != -1) {
+                    //三个参数，第一个参数是写的内容，第二个参数是从什么地方开始写，第三个参数是需要写的大小
+                    fileOutputStream.write(buffer, 0, byteread);
+                }
+                inputStream.close();
+                fileOutputStream.close();
+            }
+        }
+        catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            System.out.println("复制单个文件出错");
+            e.printStackTrace();
+        }
+    }
 }
